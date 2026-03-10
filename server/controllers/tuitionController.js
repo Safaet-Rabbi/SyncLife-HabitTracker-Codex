@@ -43,6 +43,7 @@ exports.addStudent = async (req, res) => {
     }
 
     const student = new Student({
+      user: req.user._id,
       name,
       className,
       subjectCount: Number(subjectCount),
@@ -64,7 +65,7 @@ exports.addStudent = async (req, res) => {
 // @access  Private
 exports.getStudents = async (req, res) => {
   try {
-    let students = await Student.find({}).sort({ createdAt: -1 });
+    let students = await Student.find({ user: req.user._id }).sort({ createdAt: -1 });
 
     // Calculate total present days for each student
     students = students.map((student) => attachAttendanceStats(student));
@@ -87,7 +88,7 @@ exports.markAttendance = async (req, res) => {
       return res.status(400).json({ message: 'Student ID and date are required.' });
     }
 
-    const student = await Student.findById(studentId);
+    const student = await Student.findOne({ _id: studentId, user: req.user._id });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found.' });
@@ -125,7 +126,7 @@ exports.markAttendance = async (req, res) => {
 // @access  Private
 exports.deleteStudent = async (req, res) => {
   try {
-    const student = await Student.findByIdAndDelete(req.params.id);
+    const student = await Student.findOneAndDelete({ _id: req.params.id, user: req.user._id });
 
     if (!student) {
       return res.status(404).json({ message: 'Student not found.' });
@@ -145,8 +146,8 @@ exports.updateStudent = async (req, res) => {
   try {
     const { name, className, subjectCount, location, monthlyFee, joinedDate } = req.body;
 
-    const student = await Student.findByIdAndUpdate(
-      req.params.id,
+    const student = await Student.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
       {
         name,
         className,
@@ -174,7 +175,7 @@ exports.updateStudent = async (req, res) => {
 // @access  Private
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalStudents = await Student.countDocuments();
+    const totalStudents = await Student.countDocuments({ user: req.user._id });
 
     const now = new Date();
     const startOfCurrentMonth = startOfMonth(now);
@@ -182,6 +183,7 @@ exports.getDashboardStats = async (req, res) => {
 
     // Find all attendance records within the current month that are marked as true (present)
     const attendanceThisMonth = await Student.aggregate([
+      { $match: { user: req.user._id } },
       { $unwind: '$attendanceRecords' },
       {
         $match: {

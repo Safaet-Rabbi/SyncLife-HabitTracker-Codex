@@ -109,6 +109,10 @@ const loginUser = asyncHandler(async (req, res) => {
     res.status(401);
     throw new Error('Invalid email or password');
   }
+  if (user.isActive === false) {
+    res.status(403);
+    throw new Error('Account is disabled. Contact admin.');
+  }
 
   const payload = await issueSession({ user, req, res });
   res.json(payload);
@@ -230,6 +234,7 @@ const getMe = asyncHandler(async (req, res) => {
     name: req.user.name,
     email: req.user.email,
     role: req.user.role,
+    isActive: req.user.isActive,
     preferences: req.user.preferences,
     createdAt: req.user.createdAt,
   });

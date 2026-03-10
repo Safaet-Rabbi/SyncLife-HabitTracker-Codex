@@ -1,0 +1,24 @@
+sequenceDiagram
+participant U as User
+participant FE as Frontend
+participant BE as Backend
+participant DB as MongoDB
+participant CRON as CronJob
+
+U->>FE: Enter credentials
+FE->>BE: POST /api/v1/auth/login
+BE->>DB: Verify user + password
+DB-->>BE: User record
+BE-->>FE: JWT token + profile
+FE->>BE: PUT /api/v1/nutrition/profile
+BE->>DB: Upsert profile
+DB-->>BE: Profile saved
+BE-->>FE: Profile response
+FE->>BE: POST /api/v1/nutrition/foods
+BE->>DB: Create FoodLog
+DB-->>BE: Log saved
+BE-->>FE: FoodLog response
+CRON->>BE: Daily schedule tick
+BE->>DB: Create Notification if due
+DB-->>BE: Notification saved
+BE-->>FE: Notification available

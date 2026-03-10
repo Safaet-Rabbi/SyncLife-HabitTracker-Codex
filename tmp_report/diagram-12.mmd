@@ -1,0 +1,7 @@
+flowchart TD
+Start --> CheckUserSettings
+CheckUserSettings --> MatchTime
+MatchTime --> GenerateContent
+GenerateContent --> CreateNotification
+CreateNotification --> SendToUser
+SendToUser --> End

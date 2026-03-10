@@ -1,5 +1,8 @@
 const asyncHandler = require('express-async-handler');
 const PrayerLog = require('../models/PrayerLog');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+const { getPrayerTimes } = require('../services/prayerTimeService');
 
 const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -63,7 +66,113 @@ const getMonthlyPrayerLogs = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc Get prayer settings
+// @route GET /api/v1/prayer/settings
+// @access Private
+const getPrayerSettings = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('preferences');
+  res.json({
+    prayerCity: user?.preferences?.prayerCity || 'Dhaka',
+    prayerCountry: user?.preferences?.prayerCountry || 'Bangladesh',
+    prayerMethod: user?.preferences?.prayerMethod ?? 2,
+    prayerTimezone: user?.preferences?.prayerTimezone || 'Asia/Dhaka',
+    prayerReminderOffsetMin: user?.preferences?.prayerReminderOffsetMin ?? 0,
+  });
+});
+
+// @desc Update prayer settings
+// @route PUT /api/v1/prayer/settings
+// @access Private
+const updatePrayerSettings = asyncHandler(async (req, res) => {
+  const { prayerCity, prayerCountry, prayerMethod, prayerTimezone, prayerReminderOffsetMin } = req.body;
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  user.preferences = {
+    ...user.preferences,
+    ...(prayerCity ? { prayerCity } : {}),
+    ...(prayerCountry ? { prayerCountry } : {}),
+    ...(prayerMethod !== undefined ? { prayerMethod: Number(prayerMethod) } : {}),
+    ...(prayerTimezone ? { prayerTimezone } : {}),
+    ...(prayerReminderOffsetMin !== undefined ? { prayerReminderOffsetMin: Number(prayerReminderOffsetMin) } : {}),
+  };
+
+  await user.save();
+  res.json({ message: 'Prayer settings updated', preferences: user.preferences });
+});
+
+// @desc Get prayer times for a date
+// @route GET /api/v1/prayer/times?date=YYYY-MM-DD
+// @access Private
+const getPrayerTimesForDate = asyncHandler(async (req, res) => {
+  const date = req.query.date || new Date().toISOString().slice(0, 10);
+  const user = await User.findById(req.user._id).select('preferences');
+  const settings = user?.preferences || {};
+
+  const payload = await getPrayerTimes({
+    date,
+    city: settings.prayerCity || 'Dhaka',
+    country: settings.prayerCountry || 'Bangladesh',
+    method: settings.prayerMethod ?? 2,
+    timezone: settings.prayerTimezone || 'Asia/Dhaka',
+  });
+
+  res.json(payload);
+});
+
+// @desc Create prayer reminder notifications for a date
+// @route POST /api/v1/prayer/reminders
+// @access Private
+const schedulePrayerReminders = asyncHandler(async (req, res) => {
+  const date = req.body.date || new Date().toISOString().slice(0, 10);
+  const user = await User.findById(req.user._id).select('preferences');
+  const settings = user?.preferences || {};
+  const offset = Number(settings.prayerReminderOffsetMin || 0);
+
+  const times = await getPrayerTimes({
+    date,
+    city: settings.prayerCity || 'Dhaka',
+    country: settings.prayerCountry || 'Bangladesh',
+    method: settings.prayerMethod ?? 2,
+    timezone: settings.prayerTimezone || 'Asia/Dhaka',
+  });
+
+  const entries = Object.entries(times.timings || {});
+  const payload = entries.map(([name, time]) => {
+    // Best-effort scheduled time stored as ISO without timezone conversion.
+    const [hh, mm] = time.split(':').map(Number);
+    const scheduled = new Date(`${date}T${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:00`);
+    scheduled.setMinutes(scheduled.getMinutes() - offset);
+
+    return {
+      user: req.user._id,
+      module: 'prayer',
+      type: 'reminder',
+      title: `${name} Prayer Reminder`,
+      message: `Time: ${time} (${times.timezone})`,
+      scheduledFor: scheduled,
+      meta: {
+        date,
+        prayer: name,
+        timezone: times.timezone,
+        offsetMin: offset,
+      },
+    };
+  });
+
+  await Notification.insertMany(payload, { ordered: false });
+  res.json({ message: 'Prayer reminders scheduled', count: payload.length });
+});
+
 module.exports = {
   upsertPrayerLog,
   getMonthlyPrayerLogs,
+  getPrayerSettings,
+  updatePrayerSettings,
+  getPrayerTimesForDate,
+  schedulePrayerReminders,
 };

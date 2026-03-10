@@ -1,0 +1,9 @@
+erDiagram
+  USER ||--|| NUTRITION_PROFILE : has
+  USER ||--o{ FOOD_LOG : creates
+  USER ||--o{ PRAYER_LOG : creates
+  USER ||--o{ SLEEP_LOG : creates
+  USER ||--o{ STUDY_TASK : creates
+  USER ||--o{ NOTIFICATION : receives
+  HABIT ||--o{ COMPLETION : has
+  STUDENT ||--o{ ATTENDANCE_RECORD : contains

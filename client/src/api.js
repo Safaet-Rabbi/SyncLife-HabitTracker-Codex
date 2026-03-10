@@ -113,5 +113,10 @@ export const logoutSession = () => api.post('/v1/auth/logout', {}, { skipAuth: t
 export const forgotPassword = (payload) => api.post('/v1/auth/forgot-password', payload, { skipAuth: true });
 export const resetPassword = (payload) => api.post('/v1/auth/reset-password', payload, { skipAuth: true });
 export const getMe = () => api.get('/v1/auth/me');
+export const getAdminStats = () => api.get('/v1/admin/stats');
+export const getAdminUsers = () => api.get('/v1/admin/users');
+export const updateAdminUserRole = (id, role) => api.put(`/v1/admin/users/${id}/role`, { role });
+export const updateAdminUserStatus = (id, isActive) => api.put(`/v1/admin/users/${id}/status`, { isActive });
+export const adminResetUserPassword = (id) => api.post(`/v1/admin/users/${id}/reset-password`);
 
 export default api;

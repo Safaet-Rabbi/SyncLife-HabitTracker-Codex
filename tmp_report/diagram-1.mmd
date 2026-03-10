@@ -1,0 +1,74 @@
+classDiagram
+class User {
+  +String name
+  +String email
+  +String password
+  +String role
+  +Object preferences
+}
+class NutritionProfile {
+  +Number age
+  +String gender
+  +Number weightKg
+  +Number heightCm
+  +String goal
+  +String activityLevel
+  +Number bmi
+  +Number dailyCalorieTarget
+}
+class FoodLog {
+  +String date
+  +String mealType
+  +String foodName
+  +Number calories
+  +Number protein
+  +Number carbs
+  +Number fat
+}
+class PrayerLog {
+  +String date
+  +Object prayers
+}
+class SleepLog {
+  +String date
+  +Number hours
+  +Number quality
+}
+class StudyTask {
+  +String subject
+  +String title
+  +String priority
+  +String status
+  +Array checklist
+}
+class Notification {
+  +String module
+  +String type
+  +String title
+  +String message
+  +Boolean isRead
+}
+class Habit {
+  +String name
+  +String category
+  +String frequency
+}
+class Completion {
+  +String date
+  +Boolean completed
+}
+class Student {
+  +String name
+  +String className
+  +String location
+  +Array attendanceRecords
+}
+
+User "1" --> "1" NutritionProfile
+User "1" --> "many" FoodLog
+User "1" --> "many" PrayerLog
+User "1" --> "many" SleepLog
+User "1" --> "many" StudyTask
+User "1" --> "many" Notification
+Habit "1" --> "many" Completion
+Student "1" --> "many" AttendanceRecord

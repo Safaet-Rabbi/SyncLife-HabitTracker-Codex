@@ -25,6 +25,10 @@ const protect = asyncHandler(async (req, res, next) => {
       res.status(401);
       throw new Error('Not authorized, user no longer exists');
     }
+    if (user.isActive === false) {
+      res.status(403);
+      throw new Error('Account is disabled');
+    }
     req.user = user;
     next();
   } catch (error) {

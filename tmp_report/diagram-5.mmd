@@ -1,0 +1,11 @@
+flowchart TD
+Start --> ChooseAuth
+ChooseAuth --> Register
+ChooseAuth --> Login
+Register --> ValidateInput
+ValidateInput --> CreateUser
+CreateUser --> IssueToken
+Login --> VerifyCredentials
+VerifyCredentials --> IssueToken
+IssueToken --> RedirectDashboard
+RedirectDashboard --> End

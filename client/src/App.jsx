@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { FaChartLine, FaFire, FaTrophy, FaTachometerAlt, FaList, FaChartBar, FaCalendar, FaUserShield, FaUtensils, FaMoon, FaBookOpen, FaBell } from 'react-icons/fa';
 import * as api from './api';
 import Dashboard from './components/Dashboard';
@@ -13,6 +14,8 @@ import PrayerTracker from './pages/PrayerTracker';
 import SleepTracker from './pages/SleepTracker';
 import StudyPlanner from './pages/StudyPlanner';
 import NotificationCenter from './pages/NotificationCenter';
+import UnifiedAnalytics from './pages/UnifiedAnalytics';
+import AdminPanel from './pages/AdminPanel';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -56,6 +59,7 @@ function App() {
   // Stats
   const [streak, setStreak] = useState(0);
   const [completedToday, setCompletedToday] = useState(0);
+  const authUser = useSelector((state) => state.auth.user);
 
   useEffect(() => {
     fetchData();
@@ -291,6 +295,12 @@ function App() {
         >
           <FaChartBar /> Analytics
         </button>
+        <button
+          className={`nav-tab ${activeTab === 'unified' ? 'active' : ''}`}
+          onClick={() => setActiveTab('unified')}
+        >
+          <FaChartBar /> Unified
+        </button>
         <button 
           className={`nav-tab ${activeTab === 'calendar' ? 'active' : ''}`}
           onClick={() => setActiveTab('calendar')}
@@ -339,6 +349,14 @@ function App() {
         >
           <FaBell /> Notify
         </button>
+        {authUser?.role === 'admin' && (
+          <button
+            className={`nav-tab ${activeTab === 'admin' ? 'active' : ''}`}
+            onClick={() => setActiveTab('admin')}
+          >
+            <FaUserShield /> Admin
+          </button>
+        )}
       </nav>
 
       {/* Content */}
@@ -363,6 +381,9 @@ function App() {
         {activeTab === 'analytics' && (
           <Analytics habits={habits} completions={completions} />
         )}
+        {activeTab === 'unified' && (
+          <UnifiedAnalytics />
+        )}
         {activeTab === 'calendar' && (
           <CalendarView habits={habits} completions={completions} />
         )}
@@ -375,6 +396,7 @@ function App() {
         {activeTab === 'sleep' && <SleepTracker />}
         {activeTab === 'study' && <StudyPlanner />}
         {activeTab === 'notifications' && <NotificationCenter />}
+        {activeTab === 'admin' && authUser?.role === 'admin' && <AdminPanel />}
       </main>
 
       {/* Modal */}

@@ -43,6 +43,7 @@ app.use('/api/v1/prayer', require('./routes/prayerRoutes'));
 app.use('/api/v1/sleep', require('./routes/sleepRoutes'));
 app.use('/api/v1/study', require('./routes/studyRoutes'));
 app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
+app.use('/api/v1/admin', require('./routes/adminRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Ultimate Life Habit Tracker API is running');

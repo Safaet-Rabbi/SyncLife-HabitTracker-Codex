@@ -71,6 +71,10 @@ const getFoodLogs = asyncHandler(async (req, res) => {
 
   const query = { user: req.user._id };
   if (startDate && endDate) query.date = { $gte: startDate, $lte: endDate };
+  if (req.query.mealType) query.mealType = req.query.mealType;
+  if (req.query.search) {
+    query.foodName = { $regex: req.query.search, $options: 'i' };
+  }
 
   const [items, total] = await Promise.all([
     FoodLog.find(query).sort({ date: -1, createdAt: -1 }).skip(skip).limit(limit),
@@ -86,6 +90,36 @@ const getFoodLogs = asyncHandler(async (req, res) => {
       totalPages: Math.ceil(total / limit),
     },
   });
+});
+
+// @desc Update a food log
+// @route PUT /api/v1/nutrition/foods/:id
+// @access Private
+const updateFoodLog = asyncHandler(async (req, res) => {
+  const updated = await FoodLog.findOneAndUpdate(
+    { _id: req.params.id, user: req.user._id },
+    req.body,
+    { new: true, runValidators: true }
+  );
+
+  if (!updated) {
+    res.status(404);
+    throw new Error('Food log not found');
+  }
+
+  res.json(updated);
+});
+
+// @desc Delete a food log
+// @route DELETE /api/v1/nutrition/foods/:id
+// @access Private
+const deleteFoodLog = asyncHandler(async (req, res) => {
+  const deleted = await FoodLog.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+  if (!deleted) {
+    res.status(404);
+    throw new Error('Food log not found');
+  }
+  res.json({ message: 'Food log removed' });
 });
 
 // @desc Get nutrition analytics
@@ -143,6 +177,8 @@ module.exports = {
   getProfile,
   createFoodLog,
   getFoodLogs,
+  updateFoodLog,
+  deleteFoodLog,
   getNutritionAnalytics,
   getRecommendations,
 };

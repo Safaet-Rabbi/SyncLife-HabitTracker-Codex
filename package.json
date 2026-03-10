@@ -1,0 +1,21 @@
+{
+  "name": "habit-tracker-pro",
+  "version": "1.0.0",
+  "description": "MERN Stack Habit Tracker",
+  "scripts": {
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm start",
+    "client": "cd client && npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2",
+    "unbzip2-stream": "^1.4.3"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "docx": "^9.6.1",
+    "jsdom": "^28.1.0",
+    "sharp": "^0.34.5"
+  }
+}

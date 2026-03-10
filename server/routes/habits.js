@@ -1,11 +1,12 @@
 const router = require('express').Router();
 const Habit = require('../models/Habit');
 const Completion = require('../models/Completion');
+const { protect } = require('../middleware/authMiddleware');
 
 // GET all habits
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
-    const habits = await Habit.find().sort({ createdAt: -1 });
+    const habits = await Habit.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(habits);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -13,9 +14,9 @@ router.get('/', async (req, res) => {
 });
 
 // POST new habit
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
-    const newHabit = new Habit(req.body);
+    const newHabit = new Habit({ ...req.body, user: req.user._id });
     const savedHabit = await newHabit.save();
     res.json(savedHabit);
   } catch (err) {
@@ -24,9 +25,13 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update habit
-router.put('/:id', async (req, res) => {
+router.put('/:id', protect, async (req, res) => {
   try {
-    const updatedHabit = await Habit.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updatedHabit = await Habit.findOneAndUpdate(
+      { _id: req.params.id, user: req.user._id },
+      req.body,
+      { new: true }
+    );
     res.json(updatedHabit);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -34,11 +39,11 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE habit
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, async (req, res) => {
   try {
-    const habit = await Habit.findByIdAndDelete(req.params.id);
+    const habit = await Habit.findOneAndDelete({ _id: req.params.id, user: req.user._id });
     // Also delete associated completions
-    await Completion.deleteMany({ habitId: req.params.id });
+    await Completion.deleteMany({ habitId: req.params.id, user: req.user._id });
     res.json({ message: 'Habit deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });

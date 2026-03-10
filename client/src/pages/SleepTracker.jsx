@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Calendar from 'react-calendar';
 import { format } from 'date-fns';
 import { FaBed, FaChartLine, FaMoon, FaSyncAlt } from 'react-icons/fa';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import api from '../api';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 const scoreColor = (score) => {
   if (score >= 85) return '#16a34a';
@@ -62,6 +66,66 @@ function SleepTracker() {
     const qualityScore = (stats.avgQuality || 0) * 10;
     return Math.round(hoursScore * 0.6 + qualityScore * 0.4);
   }, [monthlyData.stats]);
+
+  const last14Days = useMemo(() => {
+    const logs = [...(monthlyData.logs || [])];
+    return logs.slice(-14);
+  }, [monthlyData.logs]);
+
+  const bedtimeSeries = useMemo(() => {
+    return last14Days.map((row) => {
+      if (!row.bedtime) return null;
+      const [hh, mm] = row.bedtime.split(':').map(Number);
+      return hh + (mm / 60);
+    });
+  }, [last14Days]);
+
+  const wakeSeries = useMemo(() => {
+    return last14Days.map((row) => {
+      if (!row.wakeTime) return null;
+      const [hh, mm] = row.wakeTime.split(':').map(Number);
+      return hh + (mm / 60);
+    });
+  }, [last14Days]);
+
+  const hoursSeries = useMemo(() => last14Days.map((row) => row.hours || 0), [last14Days]);
+  const labelsSeries = useMemo(() => last14Days.map((row) => row.date), [last14Days]);
+
+  const hoursLineData = {
+    labels: labelsSeries,
+    datasets: [
+      {
+        label: 'Hours Slept',
+        data: hoursSeries,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+        tension: 0.3,
+        pointRadius: 3,
+      },
+    ],
+  };
+
+  const bedtimeLineData = {
+    labels: labelsSeries,
+    datasets: [
+      {
+        label: 'Bedtime (24h)',
+        data: bedtimeSeries,
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(22, 163, 74, 0.2)',
+        tension: 0.3,
+        pointRadius: 3,
+      },
+      {
+        label: 'Wake Time (24h)',
+        data: wakeSeries,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        tension: 0.3,
+        pointRadius: 3,
+      },
+    ],
+  };
 
   const loadMonthly = async (month = monthKey, dateForSync = selectedDateKey) => {
     try {
@@ -279,6 +343,28 @@ function SleepTracker() {
             ) : null}
           </>
         ) : null}
+      </div>
+
+      <div className="dashboard-card" style={{ gridColumn: '1 / -1' }}>
+        <h3><FaChartLine /> 14-Day Sleep Trend</h3>
+        {labelsSeries.length ? (
+          <div style={{ height: 240 }}>
+            <Line data={hoursLineData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+          </div>
+        ) : (
+          <p>No trend data yet.</p>
+        )}
+      </div>
+
+      <div className="dashboard-card" style={{ gridColumn: '1 / -1' }}>
+        <h3><FaChartLine /> Bedtime Consistency</h3>
+        {labelsSeries.length ? (
+          <div style={{ height: 240 }}>
+            <Line data={bedtimeLineData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+          </div>
+        ) : (
+          <p>No bedtime data yet.</p>
+        )}
       </div>
 
       {error ? <p style={{ color: '#fc466b' }}>{error}</p> : null}

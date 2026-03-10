@@ -7,9 +7,11 @@ const {
   updateStudent, // Added
   getDashboardStats,
 } = require('../controllers/tuitionController');
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+router.use(protect);
 router.post('/add-student', addStudent);
 router.get('/get-students', getStudents);
 router.put('/mark-attendance', markAttendance);

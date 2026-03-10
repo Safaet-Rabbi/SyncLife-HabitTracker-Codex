@@ -1,0 +1,25 @@
+flowchart TD
+Start --> Login
+Login --> Dashboard
+Dashboard --> Habits
+Dashboard --> Nutrition
+Dashboard --> Prayer
+Dashboard --> Sleep
+Dashboard --> Study
+Dashboard --> Tuition
+Dashboard --> Notifications
+Habits --> SaveHabits
+Nutrition --> SaveFood
+Prayer --> SavePrayer
+Sleep --> SaveSleep
+Study --> SaveStudy
+Tuition --> SaveTuition
+Notifications --> ReadNotify
+SaveHabits --> Dashboard
+SaveFood --> Dashboard
+SavePrayer --> Dashboard
+SaveSleep --> Dashboard
+SaveStudy --> Dashboard
+SaveTuition --> Dashboard
+ReadNotify --> Dashboard
+Dashboard --> End

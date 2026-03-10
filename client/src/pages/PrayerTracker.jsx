@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Calendar from 'react-calendar';
 import { format, subDays } from 'date-fns';
-import { FaCheckCircle, FaMoon, FaSyncAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaMoon, FaSyncAlt, FaBell, FaMapMarkerAlt } from 'react-icons/fa';
 import api from '../api';
 
 const initialPrayers = { fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false };
@@ -22,6 +22,15 @@ function PrayerTracker() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [settings, setSettings] = useState({
+    prayerCity: 'Dhaka',
+    prayerCountry: 'Bangladesh',
+    prayerMethod: 2,
+    prayerTimezone: 'Asia/Dhaka',
+    prayerReminderOffsetMin: 0,
+  });
+  const [prayerTimes, setPrayerTimes] = useState(null);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
   const monthKey = format(activeMonth, 'yyyy-MM');
@@ -96,6 +105,30 @@ function PrayerTracker() {
     }
   };
 
+  const loadSettings = async () => {
+    try {
+      const res = await api.get('/v1/prayer/settings');
+      setSettings({
+        prayerCity: res.data.prayerCity,
+        prayerCountry: res.data.prayerCountry,
+        prayerMethod: res.data.prayerMethod,
+        prayerTimezone: res.data.prayerTimezone,
+        prayerReminderOffsetMin: res.data.prayerReminderOffsetMin,
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load prayer settings');
+    }
+  };
+
+  const loadPrayerTimes = async (dateKey = selectedDateKey) => {
+    try {
+      const res = await api.get(`/v1/prayer/times?date=${dateKey}`);
+      setPrayerTimes(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load prayer times');
+    }
+  };
+
   useEffect(() => {
     loadMonthly(monthKey, selectedDateKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +138,12 @@ function PrayerTracker() {
     syncFormWithSelectedDate(logByDate, selectedDateKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDateKey, monthData.logs]);
+
+  useEffect(() => {
+    loadSettings();
+    loadPrayerTimes(selectedDateKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const saveSelectedDay = async () => {
     try {
@@ -121,6 +160,7 @@ function PrayerTracker() {
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
+    loadPrayerTimes(format(date, 'yyyy-MM-dd'));
   };
 
   const markAll = (value) => {
@@ -180,6 +220,48 @@ function PrayerTracker() {
 
   return (
     <div className="dashboard-grid" style={{ gridTemplateColumns: 'minmax(340px, 1.1fr) minmax(340px, 1fr)' }}>
+      <div className="dashboard-card">
+        <h3><FaMapMarkerAlt /> Prayer Settings</h3>
+        <div className="form-group">
+          <label>City</label>
+          <input value={settings.prayerCity} onChange={(e) => setSettings({ ...settings, prayerCity: e.target.value })} />
+        </div>
+        <div className="form-group">
+          <label>Country</label>
+          <input value={settings.prayerCountry} onChange={(e) => setSettings({ ...settings, prayerCountry: e.target.value })} />
+        </div>
+        <div className="form-group">
+          <label>Calculation Method (Aladhan ID)</label>
+          <input type="number" value={settings.prayerMethod} onChange={(e) => setSettings({ ...settings, prayerMethod: Number(e.target.value) })} />
+        </div>
+        <div className="form-group">
+          <label>Timezone</label>
+          <input value={settings.prayerTimezone} onChange={(e) => setSettings({ ...settings, prayerTimezone: e.target.value })} />
+        </div>
+        <div className="form-group">
+          <label>Reminder Offset (minutes before)</label>
+          <input type="number" value={settings.prayerReminderOffsetMin} onChange={(e) => setSettings({ ...settings, prayerReminderOffsetMin: Number(e.target.value) })} />
+        </div>
+        <button
+          className="btn-primary"
+          type="button"
+          disabled={settingsSaving}
+          onClick={async () => {
+            try {
+              setSettingsSaving(true);
+              await api.put('/v1/prayer/settings', settings);
+              await loadPrayerTimes(selectedDateKey);
+            } catch (err) {
+              setError(err.response?.data?.message || 'Could not save prayer settings');
+            } finally {
+              setSettingsSaving(false);
+            }
+          }}
+        >
+          {settingsSaving ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
+
       <div className="dashboard-card">
         <h3><FaMoon /> Prayer Calendar</h3>
         <div style={{ marginBottom: 10, color: '#666' }}>
@@ -253,6 +335,40 @@ function PrayerTracker() {
         <button className="btn-primary" onClick={saveSelectedDay} disabled={isSaving || isLoading}>
           {isSaving ? 'Saving...' : 'Save Day'}
         </button>
+      </div>
+
+      <div className="dashboard-card">
+        <h3><FaBell /> Prayer Times</h3>
+        {prayerTimes ? (
+          <>
+            <p>Date: <strong>{prayerTimes.date}</strong></p>
+            <p>Timezone: <strong>{prayerTimes.timezone}</strong></p>
+            <div style={{ marginTop: 10 }}>
+              {Object.entries(prayerTimes.timings).map(([name, time]) => (
+                <div key={name} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span>{name}</span>
+                  <strong>{time}</strong>
+                </div>
+              ))}
+            </div>
+            <button
+              className="btn-primary"
+              type="button"
+              style={{ marginTop: 10 }}
+              onClick={async () => {
+                try {
+                  await api.post('/v1/prayer/reminders', { date: selectedDateKey });
+                } catch (err) {
+                  setError(err.response?.data?.message || 'Could not schedule reminders');
+                }
+              }}
+            >
+              Schedule Today Reminders
+            </button>
+          </>
+        ) : (
+          <p>Loading prayer times...</p>
+        )}
       </div>
 
       <div className="dashboard-card">

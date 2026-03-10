@@ -28,12 +28,21 @@ const userSchema = new mongoose.Schema(
       enum: ['admin', 'user'],
       default: 'user',
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     preferences: {
       theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
       locale: { type: String, default: 'en' },
       notificationEnabled: { type: Boolean, default: true },
       notificationTime: { type: String, default: '08:00' },
       notificationTimezone: { type: String, default: 'UTC' },
+      prayerCity: { type: String, default: 'Dhaka' },
+      prayerCountry: { type: String, default: 'Bangladesh' },
+      prayerMethod: { type: Number, default: 2 }, // Aladhan method id
+      prayerTimezone: { type: String, default: 'Asia/Dhaka' },
+      prayerReminderOffsetMin: { type: Number, default: 0 },
     },
     passwordResetTokenHash: {
       type: String,
