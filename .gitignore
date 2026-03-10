@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+.report/
+
+# Node.js
+# attention: when in a monorepo this node_modules will be ignored
+# regardless of where it is located against the root of the project
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# dotenv environment variables file
+.env
+.env*.local
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# misc
+.DS_Store
+*.pem
+
+# client
+client/node_modules/
+client/dist/
+
+# server
+server/node_modules/
+server/dist/
+
+# temp gemini files
+.gemini
